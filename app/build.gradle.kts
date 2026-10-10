@@ -8,10 +8,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// Optional release signing. Drop a `keystore.properties` next to this module's
-// project root (see README → "Release build") to sign release APKs. When it is
-// absent — e.g. a fresh clone or CI — the release build simply stays unsigned,
-// so nothing breaks.
 val keystorePropsFile = rootProject.file("keystore.properties")
 val keystoreProps = Properties().apply {
     if (keystorePropsFile.exists()) FileInputStream(keystorePropsFile).use { load(it) }
@@ -25,8 +21,8 @@ android {
         applicationId = "com.marauder.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.3.3"
+        versionCode = 9
+        versionName = "1.3.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,11 +34,21 @@ android {
                 storePassword = keystoreProps.getProperty("storePassword")
                 keyAlias = keystoreProps.getProperty("keyAlias")
                 keyPassword = keystoreProps.getProperty("keyPassword")
+
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
 
     buildTypes {
+        debug {
+
+            if (keystorePropsFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -92,6 +98,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
 
     testImplementation(libs.junit)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

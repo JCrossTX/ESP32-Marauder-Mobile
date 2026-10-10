@@ -75,8 +75,6 @@ fun EvilPortalScreen(vm: MarauderViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     var confirmStart by remember { mutableStateOf(false) }
 
-    // Fresh flow each time the screen opens; pull the current device AP list so a
-    // target can be picked without leaving.
     LaunchedEffect(Unit) {
         vm.resetEvilPortal()
         vm.refreshList(com.marauder.mobile.data.ListType.ACCESS_POINTS)
@@ -384,7 +382,6 @@ private fun StatusRow(
     }
 }
 
-/** Resolve a content Uri's display name via the OpenableColumns provider. */
 private fun displayName(context: Context, uri: Uri): String? =
     runCatching {
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {

@@ -52,7 +52,6 @@ fun accentColor(accent: Accent): Color = when (accent) {
     Accent.PRIMARY -> MarauderCyan
 }
 
-/** A small pulsing status dot. */
 @Composable
 fun ConnectionDot(color: Color, pulsing: Boolean, modifier: Modifier = Modifier, size: Int = 10) {
     val alpha = if (pulsing) {
@@ -72,7 +71,6 @@ fun ConnectionDot(color: Color, pulsing: Boolean, modifier: Modifier = Modifier,
     )
 }
 
-/** A compact labelled value chip, e.g. "AP · 12". */
 @Composable
 fun StatChip(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
     Row(

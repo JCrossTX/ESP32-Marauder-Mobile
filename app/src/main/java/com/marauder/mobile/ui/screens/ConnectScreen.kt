@@ -43,7 +43,7 @@ import com.marauder.mobile.usb.UsbSerialManager
 import com.marauder.mobile.vm.MarauderViewModel
 
 @Composable
-fun ConnectScreen(vm: MarauderViewModel, onOpenFlash: () -> Unit) {
+fun ConnectScreen(vm: MarauderViewModel, onOpenInstaller: () -> Unit) {
     val status by vm.status.collectAsState()
     val connecting = status == UsbSerialManager.Status.CONNECTING
     var devices by remember { mutableStateOf(vm.availableDevices()) }
@@ -103,17 +103,17 @@ fun ConnectScreen(vm: MarauderViewModel, onOpenFlash: () -> Unit) {
             }
 
             OutlinedButton(
-                onClick = onOpenFlash,
+                onClick = onOpenInstaller,
                 enabled = !connecting,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Filled.SystemUpdate, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Flash / update firmware")
+                Text("Flash firmware (web installer)")
             }
 
             Text(
-                "115200 baud · JSON serial protocol",
+                "115200 baud · upstream Marauder v1.18.0 CLI",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

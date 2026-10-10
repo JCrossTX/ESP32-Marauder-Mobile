@@ -6,15 +6,6 @@ import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 
-/**
- * Writes streamed capture frames to a file in the phone's own storage — the
- * on-phone replacement for the ESP32's SD card. Files land in the app-specific
- * external directory (`Android/data/<pkg>/files/captures`), which needs no
- * runtime storage permission and is visible over USB/MTP for the user to pull
- * off. One [CaptureSink] serves the whole app; a session spans one capture
- * command (open on start, close on stop). Every method is synchronized because
- * frames arrive on the serial reader thread while the UI/VM reads counters.
- */
 class CaptureSink(private val context: Context) {
 
     data class Summary(val path: String, val bytes: Long, val missedFrames: Long)
@@ -32,13 +23,9 @@ class CaptureSink(private val context: Context) {
 
     val isActive: Boolean get() = out != null
 
-    /** Open a new capture file named after [baseName], with the extension for the
-     *  frame [type] (pcap/log/gpx). */
     @Synchronized
     fun begin(baseName: String, type: Int): String? = beginFile(baseName, CaptureFrame.extension(type))
 
-    /** Open a new capture file with an explicit [extension] (e.g. "csv" for a
-     *  wardrive log whose content is WigleWiFi CSV). Returns its absolute path. */
     @Synchronized
     fun beginFile(baseName: String, extension: String): String? {
         end()
@@ -57,7 +44,6 @@ class CaptureSink(private val context: Context) {
         }
     }
 
-    /** Append one frame's payload, tracking any gap in the frame sequence. */
     @Synchronized
     fun write(frame: CaptureFrame) {
         val o = out ?: return
@@ -67,13 +53,12 @@ class CaptureSink(private val context: Context) {
             o.write(frame.payload)
             bytes += frame.payload.size
         } catch (_: Exception) {
-            // Storage error: stop writing but keep the app alive.
+
             runCatching { o.close() }
             out = null
         }
     }
 
-    /** Append raw bytes (used for the on-phone wardrive CSV, which has no frames). */
     @Synchronized
     fun appendBytes(b: ByteArray) {
         val o = out ?: return
@@ -86,7 +71,6 @@ class CaptureSink(private val context: Context) {
         }
     }
 
-    /** Close the current file (if any) and return what was written. */
     @Synchronized
     fun end(): Summary? {
         val o = out ?: return null

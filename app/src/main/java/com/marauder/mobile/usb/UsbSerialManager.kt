@@ -31,10 +31,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/**
- * Owns the USB-OTG serial link to the ESP32 Marauder. Exposes incoming lines and
- * connection state as flows; commands are written on a background dispatcher.
- */
 class UsbSerialManager(context: Context) {
 
     private val appContext = context.applicationContext
@@ -43,7 +39,6 @@ class UsbSerialManager(context: Context) {
 
     enum class Status { DISCONNECTED, CONNECTING, CONNECTED }
 
-    /** A connectable serial adapter discovered on the USB bus. */
     class DeviceOption(val driver: UsbSerialDriver) {
         val device: UsbDevice get() = driver.device
         val id: Int get() = device.deviceId
@@ -63,15 +58,12 @@ class UsbSerialManager(context: Context) {
     private val _events = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val events: SharedFlow<String> = _events.asSharedFlow()
 
-    /** Binary pcap/log capture frames carved out of the serial stream (proto ≥ 2). */
     private val _captureFrames = MutableSharedFlow<CaptureFrame>(extraBufferCapacity = 512)
     val captureFrames: SharedFlow<CaptureFrame> = _captureFrames.asSharedFlow()
 
     private var port: UsbSerialPort? = null
     private var ioManager: SerialInputOutputManager? = null
 
-    // Single point that separates text lines from binary capture frames. Only the
-    // serial reader thread touches it, so it needs no external synchronisation.
     private val demux = SerialDemux(
         onLine = { _lines.tryEmit(it) },
         onFrame = { _captureFrames.tryEmit(it) },
@@ -91,12 +83,10 @@ class UsbSerialManager(context: Context) {
                 ?: String.format("Serial %04X:%04X", device.vendorId, device.productId)
     }
 
-    /** Default drivers + Espressif native USB-CDC (ESP32-S2/S3/C3) that the
-     *  stock probe table does not cover. */
     private val prober: UsbSerialProber = run {
         val table: ProbeTable = UsbSerialProber.getDefaultProbeTable()
-        table.addProduct(0x303A, 0x0002, CdcAcmSerialDriver::class.java) // ESP32-S2 CDC
-        table.addProduct(0x303A, 0x1001, CdcAcmSerialDriver::class.java) // ESP32-S3/C3 USB-Serial-JTAG
+        table.addProduct(0x303A, 0x0002, CdcAcmSerialDriver::class.java)
+        table.addProduct(0x303A, 0x1001, CdcAcmSerialDriver::class.java)
         table.addProduct(0x303A, 0x4001, CdcAcmSerialDriver::class.java)
         table.addProduct(0x303A, 0x0009, CdcAcmSerialDriver::class.java)
         UsbSerialProber(table)
@@ -120,9 +110,7 @@ class UsbSerialManager(context: Context) {
     private fun ensureReceiver() {
         if (receiverRegistered) return
         val filter = IntentFilter(ACTION_USB_PERMISSION)
-        // App-private receiver: our own USB-permission broadcast is package-scoped,
-        // so mark it not-exported. ContextCompat applies the flag correctly on every
-        // API level (a no-op below Android 13, where the flag does not exist).
+
         ContextCompat.registerReceiver(
             appContext,
             permissionReceiver,
@@ -135,7 +123,6 @@ class UsbSerialManager(context: Context) {
     fun availableDevices(): List<DeviceOption> =
         prober.findAllDrivers(usbManager).map { DeviceOption(it) }
 
-    /** Connect to the first adapter found; used by USB auto-attach. */
     fun connectFirst(): Boolean {
         val first = availableDevices().firstOrNull() ?: run {
             emitEvent("No USB serial adapter found")
@@ -169,8 +156,7 @@ class UsbSerialManager(context: Context) {
                 val p = driver.ports.first()
                 p.open(connection)
                 p.setParameters(BAUD, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
-                // Assert both lines together: the ESP32 auto-reset circuit only
-                // resets on a DTR/RTS mismatch, and native USB-CDC needs DTR set.
+
                 runCatching { p.setDTR(true) }
                 runCatching { p.setRTS(true) }
 
@@ -202,37 +188,20 @@ class UsbSerialManager(context: Context) {
         }
     }
 
-    /**
-     * Change the line rate on the fly (used after the `jsonbaud` handshake to
-     * raise throughput for capture streaming). The ESP32 replies at the old rate
-     * and switches, so the caller invokes this only after seeing that reply.
-     */
     fun setBaud(rate: Int) {
         runCatching { port?.setParameters(rate, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE) }
     }
 
-    // Serializes every write to the port. Without it a background poll
-    // (`jsonstatus` every ~2.5 s) can interleave its bytes into the middle of a
-    // raw binary upload (Evil Portal HTML), corrupting it. All writers take this.
     private val writeMutex = Mutex()
 
-    /** Queue a command (a newline is appended). Written on the IO dispatcher. */
     fun send(command: String) {
         val text = command.trim()
         if (text.isEmpty()) return
         scope.launch { writeMutex.withLock { writeLine(text) } }
     }
 
-    /**
-     * Run [block] holding an exclusive serial-write lock, so no queued `send()`
-     * (e.g. a background `jsonstatus` poll) can interleave. Used for the Evil
-     * Portal upload, whose command line + raw payload must reach the device
-     * uninterrupted. The device→app read path is unaffected, so awaiting a reply
-     * inside [block] is safe.
-     */
     suspend fun <T> withWriteLock(block: suspend () -> T): T = writeMutex.withLock { block() }
 
-    /** Write a command line (+`\n`). The caller MUST already hold [withWriteLock]. */
     suspend fun sendLineLocked(command: String) = withContext(Dispatchers.IO) {
         val p = port ?: run { emitEvent("Not connected"); return@withContext }
         try {
@@ -242,8 +211,6 @@ class UsbSerialManager(context: Context) {
         }
     }
 
-    /** Write raw bytes with NO trailing newline, in modest chunks. The caller MUST
-     *  already hold [withWriteLock]. Used to stream an Evil Portal HTML page. */
     suspend fun sendRawLocked(bytes: ByteArray) = withContext(Dispatchers.IO) {
         if (bytes.isEmpty()) return@withContext
         val p = port ?: run { emitEvent("Not connected"); return@withContext }

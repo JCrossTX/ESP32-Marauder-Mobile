@@ -11,15 +11,10 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-/**
- * Persists the handful of app-level preferences (currently just the light/dark
- * theme choice) with Jetpack DataStore so they survive process death and reboot.
- */
 class SettingsRepository(context: Context) {
 
     private val store = context.applicationContext.dataStore
 
-    /** `true` = dark theme (the default). */
     val darkTheme: Flow<Boolean> = store.data.map { it[DARK_THEME] ?: true }
 
     suspend fun setDarkTheme(dark: Boolean) {

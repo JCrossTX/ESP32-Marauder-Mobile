@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marauder.mobile.R
 
-/** The Marauder skull + wordmark lockup. */
 @Composable
 fun LogoHeader(
     subtitle: String,

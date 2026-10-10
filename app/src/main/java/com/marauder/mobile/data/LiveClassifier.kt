@@ -1,11 +1,5 @@
 package com.marauder.mobile.data
 
-/**
- * Describes the live view a firmware command should open:
- *  - [list]: the structured list this command fills (polled live while it runs), or null.
- *  - [continuous]: true for scans/sniffs/attacks/streams (show a Stop control and stop the
- *    scan when leaving the screen); false for one‑shot commands that just print a reply.
- */
 data class LiveSpec(val list: ListType?, val continuous: Boolean, val capture: Boolean = false) {
     val isList: Boolean get() = list != null
 }
@@ -15,10 +9,10 @@ object LiveClassifier {
     private val continuousHeads = setOf(
         "sniffprobe", "sniffbeacon", "sniffdeauth", "sniffpwn", "sniffpinescan",
         "sniffmultissid", "sniffpmkid", "sniffsae", "sniffraw", "sniffbt", "sniffskim",
-        "scanall", "scansta", "sigmon", "mactrack", "packetcount",
+        "scanall", "mactrack", "packetcount", "foxhunt", "remoteid",
         "attack", "blespam", "karma", "evilportal", "spoofat",
         "pingscan", "arpscan", "portscan",
-        "gpsdata", "nmea", "gpstracker", "wardrive", "analyzer",
+        "gpsdata", "nmea", "gpstracker", "wardrive",
     )
 
     fun of(command: String): LiveSpec {
@@ -26,15 +20,13 @@ object LiveClassifier {
         val head = c.substringBefore(' ')
         val list = when {
             head == "scanall" || head == "sniffbeacon" -> ListType.ACCESS_POINTS
-            head == "scansta" -> ListType.STATIONS
             head == "sniffprobe" -> ListType.PROBES
             head == "sniffbt" && c.contains("airtag") -> ListType.AIRTAGS
             head == "pingscan" || head == "arpscan" -> ListType.IPS
             else -> null
         }
-        // Commands that write a pcap/log the firmware would normally save to SD.
-        // With proto ≥ 2 these are streamed to the phone and saved there instead.
-        val capture = head.startsWith("sniff") || head == "wardrive"
+
+        val capture = head.startsWith("sniff") && head != "sniffbt" && head != "sniffskim"
         return LiveSpec(list = list, continuous = head in continuousHeads, capture = capture)
     }
 }

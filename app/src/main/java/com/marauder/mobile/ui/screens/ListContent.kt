@@ -51,11 +51,6 @@ import com.marauder.mobile.ui.theme.Success
 import com.marauder.mobile.ui.theme.Warning
 import com.marauder.mobile.vm.MarauderViewModel
 
-/**
- * The reusable body for any structured list (action bar + live rows). Shared by the
- * standalone [ListScreen] and the live-activity screen so a running scan shows the
- * same interactive list, refreshed live.
- */
 @Composable
 fun ListContent(
     type: ListType,
@@ -111,6 +106,30 @@ fun ListContent(
                     val data by vm.airtags.collectAsState()
                     ListBody(data.isEmpty(), isLoading, "No AirTags", "Run an AirTag sniff, then refresh.") {
                         items(data, key = { it.index }) { AirtagRow(it) }
+                    }
+                }
+                ListType.BLE_DEVICES -> {
+                    val data by vm.bleDevices.collectAsState()
+                    ListBody(data.isEmpty(), isLoading, "No BLE devices", "Run a Bluetooth sniff, then refresh.") {
+                        items(data, key = { it.index }) { BleRow(it) }
+                    }
+                }
+                ListType.PINEAPPLES -> {
+                    val data by vm.pineapples.collectAsState()
+                    ListBody(data.isEmpty(), isLoading, "No WiFi Pineapples", "Run Detect Pineapple, then refresh.") {
+                        items(data, key = { it.index }) { FoxItemRow(it) }
+                    }
+                }
+                ListType.MULTISSID -> {
+                    val data by vm.multissid.collectAsState()
+                    ListBody(data.isEmpty(), isLoading, "No MultiSSID APs", "Run Detect MultiSSID, then refresh.") {
+                        items(data, key = { it.index }) { FoxItemRow(it) }
+                    }
+                }
+                ListType.FLIPPERS -> {
+                    val data by vm.flippers.collectAsState()
+                    ListBody(data.isEmpty(), isLoading, "No Flippers", "Run Flipper Sniff, then refresh.") {
+                        items(data, key = { it.index }) { FoxItemRow(it) }
                     }
                 }
             }
@@ -186,8 +205,6 @@ private fun ActionChip(label: String, icon: ImageVector, tint: Color, onClick: (
         }
     }
 }
-
-// --- Rows --------------------------------------------------------------------
 
 @Composable
 private fun RowCard(selected: Boolean, onToggle: (() -> Unit)?, content: @Composable () -> Unit) {
@@ -295,6 +312,30 @@ private fun ProbeRow(probe: DeviceMessage.Probe) {
             Spacer(Modifier.size(2.dp))
             Meta("${probe.requests} req")
         }
+    }
+}
+
+@Composable
+private fun BleRow(dev: DeviceMessage.Ble) {
+    RowCard(selected = false, onToggle = null) {
+        Column {
+            Text(dev.name.ifBlank { "(unnamed)" }, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.size(4.dp))
+            Text("${dev.rssi} dBm", style = MaterialTheme.typography.labelMedium, color = rssiColor(dev.rssi), fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun FoxItemRow(item: DeviceMessage.FoxTargetItem) {
+    RowCard(selected = false, onToggle = null) {
+        Text(
+            item.label.ifBlank { "#${item.index}" },
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

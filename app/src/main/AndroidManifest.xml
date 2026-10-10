@@ -1,20 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- The app talks to the ESP32 Marauder over USB-OTG serial. -->
     <uses-feature
         android:name="android.hardware.usb.host"
         android:required="true" />
 
-    <!-- Firmware flashing downloads the release .bin images over HTTPS. -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Wardriving tags each AP with the phone's own GPS fix, replacing the
-         optional ESP32 GPS module. GPS hardware is not required to run the app. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature
         android:name="android.hardware.location.gps"
         android:required="false" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-feature android:name="android.hardware.wifi.direct" android:required="false" />
 
     <application
         android:name=".MarauderApp"
@@ -37,7 +48,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Auto-launch / auto-attach when a supported serial adapter is plugged in. -->
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>
@@ -45,6 +55,16 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

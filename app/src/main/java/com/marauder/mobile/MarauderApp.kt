@@ -1,12 +1,16 @@
 package com.marauder.mobile
 
 import android.app.Application
+import com.marauder.mobile.ble.BleScanner
 import com.marauder.mobile.capture.CaptureSink
+import com.marauder.mobile.data.ApiKeyStore
+import com.marauder.mobile.data.SavedWifiStore
 import com.marauder.mobile.data.SettingsRepository
+import com.marauder.mobile.data.StorageRepository
 import com.marauder.mobile.location.LocationRepository
 import com.marauder.mobile.usb.UsbSerialManager
+import com.marauder.mobile.wifi.SoftApHost
 
-/** Holds the single, process-wide USB serial link to the ESP32 and app settings. */
 class MarauderApp : Application() {
 
     lateinit var usb: UsbSerialManager
@@ -15,12 +19,25 @@ class MarauderApp : Application() {
     lateinit var settings: SettingsRepository
         private set
 
-    /** Writes streamed captures to phone storage (the on-phone SD-card replacement). */
     lateinit var captureSink: CaptureSink
         private set
 
-    /** Phone GNSS used to tag wardrive rows (the on-phone GPS-module replacement). */
     lateinit var location: LocationRepository
+        private set
+
+    lateinit var storage: StorageRepository
+        private set
+
+    lateinit var apiKeys: ApiKeyStore
+        private set
+
+    lateinit var ble: BleScanner
+        private set
+
+    lateinit var savedWifi: SavedWifiStore
+        private set
+
+    lateinit var softAp: SoftApHost
         private set
 
     override fun onCreate() {
@@ -29,5 +46,10 @@ class MarauderApp : Application() {
         settings = SettingsRepository(this)
         captureSink = CaptureSink(this)
         location = LocationRepository(this)
+        storage = StorageRepository(this)
+        apiKeys = ApiKeyStore(this)
+        ble = BleScanner(this)
+        savedWifi = SavedWifiStore(this)
+        softAp = SoftApHost(this)
     }
 }

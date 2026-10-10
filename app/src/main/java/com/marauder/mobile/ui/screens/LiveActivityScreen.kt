@@ -61,7 +61,6 @@ fun LiveActivityScreen(
     val spec = remember(command) { LiveClassifier.of(command) }
     val mark = remember(command) { vm.consoleMark() }
 
-    // GPS features use the phone's GNSS, which needs a runtime permission grant.
     val needsLocation = remember(command) {
         command.trim().substringBefore(' ') in setOf("wardrive", "gpsdata", "nmea", "gpstracker", "gpspoi")
     }
@@ -150,7 +149,6 @@ fun LiveActivityScreen(
     }
 }
 
-/** Compact banner showing the on-phone capture (SD-card replacement) progress. */
 @Composable
 private fun CaptureBanner(state: CaptureUiState) {
     val kb = state.bytes / 1024.0
@@ -165,8 +163,6 @@ private fun CaptureBanner(state: CaptureUiState) {
             text = buildString {
                 append("%.1f KB".format(kb))
                 if (state.rows > 0) append(" · ${state.rows} rows")
-                if (state.missedFrames > 0) append(" · ${state.missedFrames} missed")
-                if (state.droppedPackets > 0) append(" · ${state.droppedPackets} dropped")
             },
             style = MaterialTheme.typography.labelSmall,
             fontFamily = FontFamily.Monospace,
