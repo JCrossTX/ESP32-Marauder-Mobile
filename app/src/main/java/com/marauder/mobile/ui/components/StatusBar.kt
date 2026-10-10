@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.marauder.mobile.data.ScanModes
 import com.marauder.mobile.protocol.DeviceMessage
 import com.marauder.mobile.ui.theme.CatWifi
 import com.marauder.mobile.ui.theme.Danger
@@ -56,7 +55,8 @@ fun StatusPanel(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.weight(1f))
-                status?.let {
+
+                status?.takeIf { it.free >= 0 }?.let {
                     Text(
                         "RAM ${it.free / 1024} KB",
                         style = MaterialTheme.typography.labelMedium,
@@ -72,7 +72,7 @@ fun StatusPanel(
                         val modeColor = if (running) Danger else MarauderCyan
                         StatChip(
                             label = if (running) "LIVE" else "MODE",
-                            value = ScanModes.name(status.mode),
+                            value = status.modeLabel,
                             color = modeColor,
                         )
                         Spacer(Modifier.weight(1f))

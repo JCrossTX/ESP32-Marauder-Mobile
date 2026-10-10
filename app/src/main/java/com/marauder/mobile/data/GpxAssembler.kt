@@ -4,11 +4,6 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-/**
- * Builds GPX 1.1 tracks and waypoints on the phone from its own GNSS fixes — the
- * on-phone replacement for the ESP32 GPS Tracker / POI features (which need a
- * wired GPS module). Output imports into GPX Studio, Google Earth, etc.
- */
 object GpxAssembler {
 
     const val TRACK_HEADER =

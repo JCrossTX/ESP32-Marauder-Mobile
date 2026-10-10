@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marauder.mobile.R
 
-private const val REPO_URL = "https://github.com/0xsys/ESP32-Marauder-Mobile"
+private const val REPO_URL = "https://github.com/JCrossTX/ESP32-Marauder-Mobile"
 private const val AUTHOR_URL = "https://github.com/0xsys"
 private const val FIRMWARE_URL = "https://github.com/justcallmekoko/ESP32Marauder"
 
@@ -75,7 +75,7 @@ fun AboutScreen(onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // --- Logo + wordmark -------------------------------------------------
+
             Image(
                 painter = painterResource(R.drawable.marauder_skull),
                 contentDescription = "Marauder",
@@ -90,25 +90,25 @@ fun AboutScreen(onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    "ESP32 Marauder · v1.0.0",
+                    "Controller for ESP32 Marauder firmware v1.18.0",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            // --- What it is ------------------------------------------------------
             InfoCard {
                 Text(
-                    "A Kotlin/Compose app for the ESP32 Marauder. It drives the " +
-                        "firmware entirely over USB serial — WiFi and Bluetooth sniffers, " +
-                        "scanners and attacks, GPS tools, live analyzers and device lists — " +
-                        "with every command opening its own live results screen.",
+                    "A Kotlin/Compose controller for the ESP32 Marauder. It drives the " +
+                        "upstream v1.18.0 firmware entirely over USB serial — WiFi and " +
+                        "Bluetooth sniffers, scanners and attacks, GPS tools and device " +
+                        "lists — parsing the firmware's own CLI output, with every command " +
+                        "opening its own live results screen. Firmware flashing is done with " +
+                        "the official web installer.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
-            // --- Only needs an ESP32 --------------------------------------------
             InfoCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -135,16 +135,15 @@ fun AboutScreen(onBack: () -> Unit) {
                 )
             }
 
-            // --- Links -----------------------------------------------------------
             LinkRow(
                 icon = Icons.Filled.Code,
                 title = "Project repository",
-                subtitle = "github.com/0xsys/ESP32-Marauder-Mobile",
+                subtitle = "github.com/JCrossTX/ESP32-Marauder-Mobile",
                 onClick = { uriHandler.openUri(REPO_URL) },
             )
             LinkRow(
                 icon = Icons.Filled.Person,
-                title = "Developer · Mohammed Ali",
+                title = "Original Developer · Mohammed Ali",
                 subtitle = "github.com/0xsys",
                 onClick = { uriHandler.openUri(AUTHOR_URL) },
             )

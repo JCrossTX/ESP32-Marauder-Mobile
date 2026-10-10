@@ -14,12 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/**
- * Streams the phone's own GNSS fixes — the on-phone replacement for the ESP32
- * GPS module. Used to tag wardrive rows (see WardriveAssembler). Requires the
- * ACCESS_FINE_LOCATION runtime permission; without it [start] returns false and
- * [location] stays null so callers degrade gracefully.
- */
 class LocationRepository(context: Context) {
 
     private val appContext = context.applicationContext
@@ -28,13 +22,23 @@ class LocationRepository(context: Context) {
     private val _location = MutableStateFlow<PhoneLocation?>(null)
     val location: StateFlow<PhoneLocation?> = _location.asStateFlow()
 
+    private val _satellites = MutableStateFlow(0)
+    val satellites: StateFlow<Int> = _satellites.asStateFlow()
+
     private val listener = LocationListener { loc -> _location.value = loc.toPhone() }
+
+    private val gnssCallback = object : android.location.GnssStatus.Callback() {
+        override fun onSatelliteStatusChanged(status: android.location.GnssStatus) {
+            var used = 0
+            for (i in 0 until status.satelliteCount) if (status.usedInFix(i)) used++
+            _satellites.value = if (used > 0) used else status.satelliteCount
+        }
+    }
 
     fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
 
-    /** Begin GPS updates (~1 Hz). Returns false if permission is missing or GPS is off. */
     @SuppressLint("MissingPermission")
     fun start(): Boolean {
         if (!hasPermission()) return false
@@ -47,16 +51,19 @@ class LocationRepository(context: Context) {
                 listener,
                 Looper.getMainLooper(),
             )
+            runCatching { lm.registerGnssStatusCallback(gnssCallback, android.os.Handler(Looper.getMainLooper())) }
             true
         } catch (e: SecurityException) {
             false
         } catch (e: IllegalArgumentException) {
-            false // GPS provider unavailable on this device
+            false
         }
     }
 
     fun stop() {
         runCatching { lm.removeUpdates(listener) }
+        runCatching { lm.unregisterGnssStatusCallback(gnssCallback) }
+        _satellites.value = 0
     }
 
     private fun Location.toPhone() = PhoneLocation(

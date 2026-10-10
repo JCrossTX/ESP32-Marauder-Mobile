@@ -59,7 +59,6 @@ fun MarauderTheme(
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-    // Keep the status/navigation bar icon contrast in step with the theme.
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

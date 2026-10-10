@@ -23,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.marauder.mobile.data.Catalog
@@ -67,11 +67,20 @@ fun MenuScreen(
 
     val connStatus by vm.status.collectAsState()
     val name by vm.connectedName.collectAsState()
+    val info by vm.info.collectAsState()
     val devStatus by vm.deviceStatus.collectAsState()
     val darkTheme by vm.darkTheme.collectAsState()
     val connected = connStatus == UsbSerialManager.Status.CONNECTED
 
     var pendingConfirm by remember { mutableStateOf<MenuItem?>(null) }
+    var pendingPrompt by remember { mutableStateOf<MenuItem?>(null) }
+
+    if (isRoot) {
+        androidx.compose.runtime.DisposableEffect(connected) {
+            if (connected) vm.startStatusPolling()
+            onDispose { vm.stopStatusPolling() }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -133,7 +142,8 @@ fun MenuScreen(
                 item {
                     StatusPanel(
                         connected = connected,
-                        name = name,
+
+                        name = info?.board?.takeIf { it.isNotBlank() } ?: name,
                         status = devStatus,
                         onStop = { vm.stopScan() },
                     )
@@ -145,10 +155,11 @@ fun MenuScreen(
                 MenuCard(
                     item = item,
                     onClick = {
-                        if (item.dangerous && item.action is MenuAction.Send) {
-                            pendingConfirm = item
-                        } else {
-                            onItemClick(item)
+                        val action = item.action
+                        when {
+                            action is MenuAction.SendPrompt -> pendingPrompt = item
+                            item.dangerous && action is MenuAction.Send -> pendingConfirm = item
+                            else -> onItemClick(item)
                         }
                     },
                 )
@@ -185,11 +196,48 @@ fun MenuScreen(
             },
         )
     }
+
+    pendingPrompt?.let { item ->
+        val prompt = item.action as? MenuAction.SendPrompt ?: return@let
+        var text by remember(item.title) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { pendingPrompt = null },
+            title = { Text(prompt.promptTitle) },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        singleLine = true,
+                        placeholder = { Text(prompt.hint, fontFamily = FontFamily.Monospace) },
+                    )
+                    Text(
+                        "Runs: ${prompt.commandPrefix}${text}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = text.isNotBlank(),
+                    onClick = {
+                        onItemClick(item.copy(action = MenuAction.Send(prompt.commandPrefix + text.trim())))
+                        pendingPrompt = null
+                    },
+                ) { Text("Run") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingPrompt = null }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
-/** The author credit pinned to the bottom of the main menu; taps open About. */
 @Composable
-private fun CreditFooter(onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun CreditFooter(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -198,17 +246,23 @@ private fun CreditFooter(onClick: () -> Unit, modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            "by Mohammed Ali",
+            "Forked and developed from original GitHub repo",
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
         Text(
-            "GitHub @0xsys · tap for About",
+            "by Mohammed Ali @0xsys",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            "tap for About",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 2.dp),
         )
     }
 }

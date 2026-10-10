@@ -5,12 +5,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 
-/**
- * Synthesises standard NMEA-0183 sentences ($GPGGA / $GPRMC) from the phone's own
- * GNSS fix, so the app's "NMEA Stream" works with the phone GPS instead of a wired
- * module. Each sentence carries the correct XOR checksum, so any NMEA consumer
- * accepts it.
- */
 object NmeaAssembler {
 
     fun gga(loc: PhoneLocation): String {
@@ -28,7 +22,6 @@ object NmeaAssembler {
         return withChecksum(body)
     }
 
-    // Decimal degrees -> NMEA ddmm.mmmm (+ hemisphere).
     private fun ddmm(v: Double, isLat: Boolean): Pair<String, Char> {
         val hemi = if (isLat) (if (v >= 0) 'N' else 'S') else (if (v >= 0) 'E' else 'W')
         val a = abs(v)

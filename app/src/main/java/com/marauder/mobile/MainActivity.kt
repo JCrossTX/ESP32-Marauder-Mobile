@@ -32,8 +32,6 @@ class MainActivity : ComponentActivity() {
         handleUsbIntent(intent)
     }
 
-    /** Launched via USB_DEVICE_ATTACHED → the system already granted us access to
-     *  that device, so connect straight away. */
     private fun handleUsbIntent(intent: Intent?) {
         if (intent?.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
             (application as MarauderApp).usb.connectFirst()
